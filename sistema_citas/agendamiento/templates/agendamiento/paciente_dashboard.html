@@ -1,0 +1,25 @@
+{% extends "agendamiento/base.html" %}
+
+{% block content %}
+<h1>Dashboard de {{ paciente.usuario.get_full_name }}</h1>
+{% if user.is_authenticated %}
+    
+{% endif %}
+<h2>Mis Citas</h2>
+{% if citas %}
+    <ul>
+    {% for cita in citas %}
+        <li>
+            <strong>{{ cita.fecha_hora|date:"d M Y H:i" }}</strong> - Con: {{ cita.medico.usuario.get_full_name }} ({{ cita.medico.especialidad.nombre }})
+            - Estado: {{ cita.get_estado_display }}
+            {% if cita.estado == 'programada' %}
+                <a href="{% url 'cancelar_cita' cita.id %}">Cancelar</a>
+            {% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No tienes citas programadas.</p>
+{% endif %}
+ 
+{% endblock %}

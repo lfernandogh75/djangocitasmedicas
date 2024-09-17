@@ -1,0 +1,33 @@
+{% extends "agendamiento/base.html" %}
+
+{% block title %}Dashboard Médico{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <a class="nav-link" href="{% url 'logout_medico' %}">Cerrar Sesión</a>
+    <h2>Bienvenido, Dr. {{ medico.usuario.get_full_name }}</h2>
+    <h4>Especialidad: {{ medico.especialidad.nombre }}</h4>
+
+    <h3>Mis Citas</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Fecha y Hora</th>
+                <th>Motivo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cita in citas %}
+            <tr>
+                <td>{{ cita.paciente.usuario.get_full_name }}</td>
+                <td>{{ cita.fecha_hora }}</td>
+                <td>{{ cita.motivo }}</td>
+                <td>{{ cita.get_estado_display }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

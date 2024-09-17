@@ -1,0 +1,19 @@
+{% extends "agendamiento/base.html" %}
+
+{% block title %}Login Médico{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Inicio de Sesión para Médicos</h2>
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-warning">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    <form method="post" action="">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+    </form>
+</div>
+{% endblock %}

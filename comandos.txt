@@ -1,0 +1,313 @@
+1) crear entorno virtual
+python -m venv env
+2) activarlo 
+env\Scripts\activate
+2.1) para desactivarlo solo deactivate
+3) instalar django
+pip install django
+4) crear proyecto
+django-admin startproject sistema_citas
+5) controlar para  utilizar mysql 
+pip install django mysqlclient
+6) configurar la BD en settings.py y crear la BD en mysql
+______________________________________
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'django_citasdb34',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
+    }
+}
+______________________________________
+7) entrar el proyecto sistema_citas
+cd sistema_citas
+8) crear app agendamiento
+python manage.py startapp agendamiento
+# Application definition en settings.py
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'agendamiento',
+]
+9) crear el modelo en models.py 
+______________________________________________________
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+# Modelo de Usuario Personalizado
+class CustomUser(AbstractUser):
+    ROLE_CHOICES = (
+        ('admin', 'Administrador'),
+        ('medico', 'Médico'),
+        ('paciente', 'Paciente'),
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='paciente')
+
+    def __str__(self):
+        return f"{self.username} ({self.get_role_display()})"
+
+# Modelo de Especialidad
+class Especialidad(models.Model):
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.nombre
+
+# Modelo de Médico
+class Medico(models.Model):
+    usuario = models.OneToOneField(CustomUser, on_delete=models.CASCADE, limit_choices_to={'role': 'medico'})
+    especialidad = models.ForeignKey(Especialidad, on_delete=models.CASCADE)
+    telefono = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} - {self.especialidad.nombre}"
+
+# Modelo de Paciente
+class Paciente(models.Model):
+    usuario = models.OneToOneField(CustomUser, on_delete=models.CASCADE, limit_choices_to={'role': 'paciente'})
+    telefono = models.CharField(max_length=20)
+    direccion = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name()}"
+
+# Modelo de Cita
+class Cita(models.Model):
+    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='citas_paciente')
+    medico = models.ForeignKey(Medico, on_delete=models.CASCADE)
+    fecha_hora = models.DateTimeField()
+    motivo = models.TextField()
+    estado = models.CharField(max_length=20, choices=[
+        ('programada', 'Programada'),
+        ('completada', 'Completada'),
+        ('cancelada', 'Cancelada'),
+    ], default='programada')
+
+    def __str__(self):
+        return f"Cita: {self.paciente.usuario.get_full_name()} con {self.medico.usuario.get_full_name()} - {self.fecha_hora.strftime('%Y-%m-%d %H:%M')}"
+
+    def cancelar(self):
+        if self.estado != 'completada':
+            self.estado = 'cancelada'
+            self.save()
+        else:
+            raise ValueError("No se puede cancelar una cita completada.")
+
+
+
+______________________________________________________
+Explicación del Diseño
+CustomUser: Este modelo extiende el modelo de usuario predeterminado de Django (AbstractUser) para agregar
+ un campo role, que distingue entre administradores, médicos, y pacientes. Esto permite un manejo flexible 
+ de permisos y vistas.
+
+Especialidad: Se mantiene igual, representando las diferentes especialidades médicas disponibles.
+ Cada Medico puede estar asociado a una especialidad.
+
+Medico: Se vincula a un CustomUser con el rol de medico, y está asociado a una Especialidad. Este modelo
+ permite almacenar información adicional específica para médicos, como el número de teléfono.
+
+Paciente: Similar al modelo de Medico, pero vinculado a un CustomUser con el rol de paciente.
+ Puedes almacenar información específica para pacientes, como dirección y teléfono.
+
+Cita: Las citas ahora se vinculan a instancias de Medico y Paciente. 
+El estado de la cita puede cambiarse a programada, completada, o cancelada.
+_________________________________________________
+
+9.1)Configuración del Modelo de Usuario en settings.py: Asegúrate de incluir esta línea para
+ utilizar el modelo de usuario personalizado:
+AUTH_USER_MODEL = 'agendamiento.CustomUser'
+10) preparar la migración
+python manage.py makemigrations
+11) aplicar la migración
+python manage.py migrate
+12) crear un super usuario
+python manage.py createsuperuser
+usuario Luis
+email fernandogh75@gmail.com
+contraseña Luis1234.
+12.1)A gestionar estos modelos en el administrador de Django, necesitarás registrarlos: en el archivo admin.py
+______________________________________
+from django.contrib import admin
+from .models import CustomUser, Especialidad, Medico, Paciente, Cita
+
+admin.site.register(CustomUser)
+admin.site.register(Especialidad)
+admin.site.register(Medico)
+admin.site.register(Paciente)
+admin.site.register(Cita)
+_________________________________________
+lo puedes probar ejecutando el servidor " python manage.py runserver" y la ruta "http://127.0.0.1:8000/admin/"
+
+13)crear archivo .gitignore
+______________________________________
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+# Entorno virtual
+venv/
+env/
+# IDEs
+.vscode/
+.idea/
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+# Archivos de configuración sensibles
+*.env
+_____________________________________________________
+14)crear el archivo requirements.txt
+15) aplicar el comando para detectar dependencias 
+pip freeze > requirements.txt
+16) ejecutar proyecto
+python manage.py runserver
+17)iniciar un git si es primera vez hacerlo en el  folder raíz 
+git init
+18) agregar el proyecto a git
+git add .
+19) hacer commit
+git commit -m "Inicialización del proyecto en Django sistema_citas "
+20) crear un repositorio en github
+git remote add origin https://github.com/tu_usuario/tu_repositorio
+21)Hacer push de los cambios al repositorio remoto:
+git push -u origin master
+22) probar clonación de repositorio y prueba 
+git config --global user.name "lfernandogh75"
+git config --global user.email fernandogh75@misena.edu.co
+git clone https://github.com/tu_usuario/tu_repositorio
+cd sistema_citas
+hacer puntos 1,2, 10, 11, 12
+# Instalar las dependencias
+pip install -r requirements.txt
+probar iniciar el proyecto punto 16
+
+
+23) utilizar Inlines
+Inlines en el administrador de Django permiten incluir formularios de modelos relacionados dentro
+ de la página de administración de un modelo padre. Esto simplifica la gestión de objetos relacionados
+  y proporciona una forma más eficiente de trabajar con relaciones entre modelos.
+
+Por ejemplo, si tienes un modelo de Médico y un modelo de Cita donde las citas están relacionadas
+ con un médico específico, puedes utilizar Inlines para gestionar las citas de un médico directamente
+  desde la página de edición de ese médico en el administrador de Django.
+
+Ejemplo de Uso de Inlines
+A continuación, te explicaré cómo utilizar los Inlines para gestionar las citas de un médico desde
+ la página de administración del modelo Medico.
+ Ventajas de Usar Inlines
+Facilidad de Uso: Los Inlines simplifican la administración de relaciones entre modelos al 
+permitir que los usuarios gestionen objetos relacionados directamente desde la página de 
+edición del modelo padre.
+
+Reducción de Errores: Al tener todo en una sola página, reduces la posibilidad de errores 
+al crear o editar objetos relacionados, ya que no necesitas navegar entre diferentes páginas.
+
+Productividad: Agilizan el proceso de gestión de datos, permitiendo crear y editar
+ múltiples objetos relacionados de forma más eficiente.
+
+Casos de Uso Comunes para Inlines
+Relaciones One-to-Many: Como las citas de un médico, comentarios de un artículo, etc.
+Relaciones Many-to-Many: Cuando necesitas añadir objetos adicionales en una relación M2M personalizada 
+con atributos adicionales.
+Anidar Formularios: Para permitir la edición de objetos complejos que están relacionados de manera jerárquica
+23) hacer mejoras crear un forms manualmente
+agendamiento/forms.py
+_____________________________________
+from django import forms
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from .models import CustomUser
+
+class CustomUserCreationForm(UserCreationForm):
+    """
+    Formulario de creación de usuario personalizado.
+    """
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'email', 'role', 'first_name', 'last_name')
+
+class CustomUserChangeForm(UserChangeForm):
+    """
+    Formulario de edición de usuario personalizado.
+    """
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'email', 'role', 'first_name', 'last_name')
+___________________________________________________________________________-
+24) modificar admin.py
+________________________________________________________
+from django.contrib import admin
+from .models import CustomUser, Especialidad, Medico, Paciente, Cita
+from django.contrib.auth.admin import UserAdmin
+from .forms import CustomUserCreationForm, CustomUserChangeForm
+
+# Clase Inline para Citas
+class CitaInline(admin.TabularInline):  # También puedes usar admin.StackedInline
+    model = Cita
+    extra = 1
+    fields = ['paciente', 'fecha_hora', 'motivo', 'estado']
+    readonly_fields = ['estado']
+    fk_name = 'medico'
+
+# Configuración del Administrador para CustomUser
+class CustomUserAdmin(UserAdmin):
+    add_form = CustomUserCreationForm
+    form = CustomUserChangeForm
+    model = CustomUser
+    list_display = ['username', 'email', 'role', 'is_staff', 'is_active']
+    list_filter = ['role', 'is_active', 'is_staff']
+    fieldsets = UserAdmin.fieldsets + (
+        (None, {'fields': ('role',)}),
+    )
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        (None, {'fields': ('role',)}),
+    )
+
+# Configuración del Administrador para Especialidad
+class EspecialidadAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'descripcion']
+    search_fields = ['nombre']
+
+# Configuración del Administrador para Medico con Inlines
+class MedicoAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'especialidad', 'telefono']
+    search_fields = ['usuario__username', 'especialidad__nombre']
+    list_filter = ['especialidad']
+    inlines = [CitaInline]  # Agregar la clase Inline
+
+# Configuración del Administrador para Paciente
+class PacienteAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'telefono', 'direccion']
+    search_fields = ['usuario__username', 'direccion']
+
+# Configuración del Administrador para Cita
+class CitaAdmin(admin.ModelAdmin):
+    list_display = ['paciente', 'medico', 'fecha_hora', 'estado']
+    search_fields = ['paciente__usuario__username', 'medico__usuario__username']
+    list_filter = ['estado', 'fecha_hora']
+    date_hierarchy = 'fecha_hora'
+
+# Registro de modelos en el administrador
+admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(Especialidad, EspecialidadAdmin)
+admin.site.register(Medico, MedicoAdmin)
+admin.site.register(Paciente, PacienteAdmin)
+admin.site.register(Cita, CitaAdmin)
+___________________________________________________________________________
